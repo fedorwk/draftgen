@@ -1,4 +1,6 @@
-github.com/fedorwk/templater v0.0.0-20220329203300-a8e18b01b7c6 h1:2HrDpTGG3p2cJGklWiWbGJntHma9DOa2j6k/xvzSGEI=
-github.com/fedorwk/templater v0.0.0-20220329203300-a8e18b01b7c6/go.mod h1:uuAOG0AxjVPbGz3Fxqmv755h7cQzhidDNML7dJCvHJg=
+github.com/fedorwk/jw-email v0.0.0-20220408172826-eac8e31f3520 h1:9SMc/QjhPSMMQwlvWv8OfxGNk/XjJrtDmTl04j7rTMk=
+github.com/fedorwk/jw-email v0.0.0-20220408172826-eac8e31f3520/go.mod h1:RFdJxOTHgaYPPEkHcFXO3eNuw+tbi2OWmwdzcIhjZhQ=
+github.com/fedorwk/templater v0.0.0-20220409113107-fcd78765fda8 h1:nMP7HvMlaDWzvkWmvTd/imgdaVVjd0mKdkqfVhQDXgI=
+github.com/fedorwk/templater v0.0.0-20220409113107-fcd78765fda8/go.mod h1:uuAOG0AxjVPbGz3Fxqmv755h7cQzhidDNML7dJCvHJg=
 github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
 github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
