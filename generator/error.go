@@ -1,4 +1,4 @@
-package draftgen
+package generator
 
 import "errors"
 

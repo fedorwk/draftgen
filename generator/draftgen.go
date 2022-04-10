@@ -1,4 +1,4 @@
-package draftgen
+package generator
 
 import (
 	"bufio"
@@ -6,6 +6,7 @@ import (
 	"io"
 	"strings"
 
+	"github.com/fedorwk/draftgen/util"
 	email "github.com/fedorwk/jw-email"
 	"github.com/fedorwk/templater"
 	"github.com/pkg/errors"
@@ -96,7 +97,7 @@ func (et *DraftGenerator) ExecuteAll(dests ...io.Writer) error {
 }
 
 func (et *DraftGenerator) defineEmailPlaceholder() error {
-	if placeHolder := DefineEmailPlaceholder(et.Items); placeHolder == "" {
+	if placeHolder := util.DefineEmailPlaceholder(et.Items); placeHolder == "" {
 		return ErrNoEmailPlaceholder
 	} else {
 		et.EmailPlaceholder = placeHolder

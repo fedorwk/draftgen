@@ -1,10 +1,10 @@
-package draftgen_test
+package generator_test
 
 import (
 	"bytes"
 	"testing"
 
-	"github.com/fedorwk/draftgen"
+	"github.com/fedorwk/draftgen/generator"
 )
 
 func TestParseTemplate(t *testing.T) {
@@ -13,7 +13,7 @@ func TestParseTemplate(t *testing.T) {
 line one
 line two`,
 	)
-	emailteplate := &draftgen.DraftGenerator{}
+	emailteplate := &generator.DraftGenerator{}
 	err := emailteplate.ParseTemplate(inputTemplate)
 	if err != nil {
 		t.Error(err)
