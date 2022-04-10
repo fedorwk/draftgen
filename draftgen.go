@@ -1,4 +1,4 @@
-package emailtemplater
+package draftgen
 
 import (
 	"bufio"
@@ -11,7 +11,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-type EmailTemplater struct {
+type DraftGenerator struct {
 	Subject              string
 	Template             string
 	Items                []map[string]string
@@ -21,7 +21,7 @@ type EmailTemplater struct {
 	cachedTemplater *templater.Templater
 }
 
-func (et *EmailTemplater) ParseTemplate(src io.Reader) error {
+func (et *DraftGenerator) ParseTemplate(src io.Reader) error {
 	scanner := bufio.NewScanner(src)
 	ok := scanner.Scan()
 	if scanner.Err() != nil {
@@ -47,7 +47,7 @@ func (et *EmailTemplater) ParseTemplate(src io.Reader) error {
 	return nil
 }
 
-func (et *EmailTemplater) Execute(itemIndex int, dst io.Writer) error {
+func (et *DraftGenerator) Execute(itemIndex int, dst io.Writer) error {
 	// if there was no cached Templater it is created and deleted at the end of the function execution
 	// used while singel Execute call
 	if et.cachedTemplater == nil {
@@ -73,7 +73,7 @@ func (et *EmailTemplater) Execute(itemIndex int, dst io.Writer) error {
 	return nil
 }
 
-func (et *EmailTemplater) ExecuteAll(dests ...io.Writer) error {
+func (et *DraftGenerator) ExecuteAll(dests ...io.Writer) error {
 	if len(dests) != len(et.Items) {
 		return errors.New("number of writers (dests) must be equal to number of Items in receiver")
 	}
@@ -95,7 +95,7 @@ func (et *EmailTemplater) ExecuteAll(dests ...io.Writer) error {
 	return nil
 }
 
-func (et *EmailTemplater) defineEmailPlaceholder() error {
+func (et *DraftGenerator) defineEmailPlaceholder() error {
 	if placeHolder := DefineEmailPlaceholder(et.Items); placeHolder == "" {
 		return ErrNoEmailPlaceholder
 	} else {

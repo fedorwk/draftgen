@@ -1,10 +1,10 @@
-package emailtemplater_test
+package draftgen_test
 
 import (
 	"bytes"
 	"testing"
 
-	emailtemplater "github.com/fedorwk/email-templater"
+	"github.com/fedorwk/draftgen"
 )
 
 func TestParseTemplate(t *testing.T) {
@@ -13,7 +13,7 @@ func TestParseTemplate(t *testing.T) {
 line one
 line two`,
 	)
-	emailteplate := &emailtemplater.EmailTemplater{}
+	emailteplate := &draftgen.DraftGenerator{}
 	err := emailteplate.ParseTemplate(inputTemplate)
 	if err != nil {
 		t.Error(err)

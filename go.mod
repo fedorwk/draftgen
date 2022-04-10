@@ -1,4 +1,4 @@
-module github.com/fedorwk/email-templater
+module github.com/fedorwk/draftgen
 
 go 1.17
 

@@ -1,4 +1,4 @@
-package emailtemplater
+package draftgen
 
 import "errors"
 
