@@ -22,7 +22,7 @@ type DraftGenerator struct {
 	cachedTemplater *templater.Templater
 }
 
-func (et *DraftGenerator) ParseTemplate(src io.Reader) error {
+func (dg *DraftGenerator) ParseTemplate(src io.Reader) error {
 	scanner := bufio.NewScanner(src)
 	ok := scanner.Scan()
 	if scanner.Err() != nil {
@@ -33,7 +33,7 @@ func (et *DraftGenerator) ParseTemplate(src io.Reader) error {
 	}
 	template := bytes.NewBuffer(nil)
 	if strings.HasPrefix(scanner.Text(), "subject:") {
-		et.Subject = strings.TrimPrefix(scanner.Text(), "subject:")
+		dg.Subject = strings.TrimPrefix(scanner.Text(), "subject:")
 	} else {
 		template.Write(scanner.Bytes())
 	}
@@ -44,24 +44,50 @@ func (et *DraftGenerator) ParseTemplate(src io.Reader) error {
 	if scanner.Err() != nil {
 		return scanner.Err()
 	}
-	et.Template = template.String()
+	dg.Template = template.String()
 	return nil
 }
 
-func (et *DraftGenerator) Execute(itemIndex int, dst io.Writer) error {
+func (dg *DraftGenerator) ParseItems(csv io.Reader, delimiter string) error {
+	scanner := bufio.NewScanner(csv)
+	var headers []string
+	if ok := scanner.Scan(); ok {
+		headers = strings.Split(scanner.Text(), delimiter)
+	}
+
+	items := make([]map[string]string, 0)
+	for scanner.Scan() {
+		values := strings.Split(scanner.Text(), delimiter)
+		if len(values) != len(headers) {
+			return errors.New("ragged csv input")
+		}
+		item := make(map[string]string, len(headers))
+		for i, header := range headers {
+			item[header] = values[i]
+		}
+		items = append(items, item)
+	}
+	if scanner.Err() != nil {
+		return scanner.Err()
+	}
+	dg.Items = items
+	return nil
+}
+
+func (dg *DraftGenerator) Execute(itemIndex int, dst io.Writer) error {
 	// if there was no cached Templater it is created and deleted at the end of the function execution
 	// used while singel Execute call
-	if et.cachedTemplater == nil {
-		et.cachedTemplater = templater.NewTemplater(et.Template, et.Items, et.StartDelim, et.EndDelim)
-		defer func() { et.cachedTemplater = nil }()
+	if dg.cachedTemplater == nil {
+		dg.cachedTemplater = templater.NewTemplater(dg.Template, dg.Items, dg.StartDelim, dg.EndDelim)
+		defer func() { dg.cachedTemplater = nil }()
 	}
-	item := et.Items[itemIndex]
+	item := dg.Items[itemIndex]
 
 	eml := email.NewEmail()
 	eml.Draft = true
-	eml.To = []string{item[et.EmailPlaceholder]}
-	eml.Subject = et.Subject
-	eml.HTML = []byte(et.cachedTemplater.ExecuteToString(itemIndex))
+	eml.To = []string{item[dg.EmailPlaceholder]}
+	eml.Subject = dg.Subject
+	eml.HTML = []byte(dg.cachedTemplater.ExecuteToString(itemIndex))
 
 	rawbytes, err := eml.Bytes()
 	if err != nil {
@@ -74,21 +100,21 @@ func (et *DraftGenerator) Execute(itemIndex int, dst io.Writer) error {
 	return nil
 }
 
-func (et *DraftGenerator) ExecuteAll(dests ...io.Writer) error {
-	if len(dests) != len(et.Items) {
+func (dg *DraftGenerator) ExecuteAll(dsts ...io.Writer) error {
+	if len(dsts) != len(dg.Items) {
 		return errors.New("number of writers (dests) must be equal to number of Items in receiver")
 	}
-	if et.EmailPlaceholder == "" {
-		err := et.defineEmailPlaceholder()
+	if dg.EmailPlaceholder == "" {
+		err := dg.defineEmailPlaceholder()
 		if err != nil {
 			return err
 		}
 	}
-	et.cachedTemplater = templater.NewTemplater(et.Template, et.Items, et.StartDelim, et.EndDelim)
-	defer func() { et.cachedTemplater = nil }()
+	dg.cachedTemplater = templater.NewTemplater(dg.Template, dg.Items, dg.StartDelim, dg.EndDelim)
+	defer func() { dg.cachedTemplater = nil }()
 
-	for i := range et.Items {
-		err := et.Execute(i, dests[i])
+	for i := range dg.Items {
+		err := dg.Execute(i, dsts[i])
 		if err != nil {
 			return err
 		}
@@ -96,11 +122,11 @@ func (et *DraftGenerator) ExecuteAll(dests ...io.Writer) error {
 	return nil
 }
 
-func (et *DraftGenerator) defineEmailPlaceholder() error {
-	if placeHolder := util.DefineEmailPlaceholder(et.Items); placeHolder == "" {
+func (dg *DraftGenerator) defineEmailPlaceholder() error {
+	if placeHolder := util.DefineEmailPlaceholder(dg.Items); placeHolder == "" {
 		return ErrNoEmailPlaceholder
 	} else {
-		et.EmailPlaceholder = placeHolder
+		dg.EmailPlaceholder = placeHolder
 	}
 	return nil
 }
