@@ -33,7 +33,9 @@ func (dg *DraftGenerator) ParseTemplate(src io.Reader) error {
 	}
 	template := bytes.NewBuffer(nil)
 	if strings.HasPrefix(scanner.Text(), "subject:") {
-		dg.Subject = strings.TrimPrefix(scanner.Text(), "subject:")
+		if dg.Subject == "" {
+			dg.Subject = strings.TrimPrefix(scanner.Text(), "subject:")
+		}
 	} else {
 		template.Write(scanner.Bytes())
 	}
