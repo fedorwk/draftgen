@@ -3,7 +3,12 @@ package cli
 import (
 	"flag"
 	"fmt"
+	"io"
 	"os"
+
+	"github.com/fedorwk/draftgen/generator"
+	"github.com/fedorwk/draftgen/util"
+	"github.com/fedorwk/go-util/data/delimiterdetector"
 )
 
 var (
@@ -21,6 +26,41 @@ var (
 
 func Run() {
 	resolveFlags()
+	templateFile, err := os.Open(TemplatePath)
+	if err != nil {
+		panic(err)
+	}
+	dataFile, err := os.Open(DataPath)
+	if err != nil {
+		panic(err)
+	}
+
+	if CSVDelim == "" {
+		resolveDelimiter(dataFile)
+	}
+
+	items, err := util.ParseItems(dataFile, CSVDelim)
+	if err != nil {
+		panic(err)
+	}
+
+	generator := generator.DraftGenerator{
+		Subject:          Subject,
+		Items:            items,
+		EmailPlaceholder: EmailPlaceholder,
+		StartDelim:       StartDelim,
+		EndDelim:         EndDelim,
+	}
+	err = generator.ParseTemplate(templateFile)
+	if err != nil {
+		panic(err)
+	}
+	// TODO:
+
+	// generate dests files (io.Writer's)
+
+	// execute generator to dests
+
 }
 
 func resolveFlags() {
@@ -52,3 +92,29 @@ func resolveFlags() {
 		}
 	}
 }
+
+func resolveDelimiter(src io.Reader) {
+	var err error
+	CSVDelim, err = delimiterdetector.Parse(src, 3)
+
+	if err != nil {
+		switch err {
+		case delimiterdetector.ErrEmptySource:
+			fmt.Println("Data source is empty\nExiting...")
+			os.Exit(1)
+		case delimiterdetector.ErrDefiningDelimiter:
+			fmt.Println("Ragged CSV input\nExiting...")
+			os.Exit(1)
+		case delimiterdetector.ErrMultipleDelimiterOptions:
+			fmt.Println("Can't detect the delimiter. please specify it")
+			fmt.Scanln(&CSVDelim)
+		}
+	}
+	if CSVDelim == "" {
+		fmt.Println("Still unable to detect delimiter\nExiting...")
+		os.Exit(1)
+	}
+}
+
+// 	fmt.Println("Can't detect the delimiter. please specify it")
+//	fmt.Scanln(&CSVDelim)
