@@ -48,32 +48,6 @@ func (dg *DraftGenerator) ParseTemplate(src io.Reader) error {
 	return nil
 }
 
-func (dg *DraftGenerator) ParseItems(csv io.Reader, delimiter string) error {
-	scanner := bufio.NewScanner(csv)
-	var headers []string
-	if ok := scanner.Scan(); ok {
-		headers = strings.Split(scanner.Text(), delimiter)
-	}
-
-	items := make([]map[string]string, 0)
-	for scanner.Scan() {
-		values := strings.Split(scanner.Text(), delimiter)
-		if len(values) != len(headers) {
-			return errors.New("ragged csv input")
-		}
-		item := make(map[string]string, len(headers))
-		for i, header := range headers {
-			item[header] = values[i]
-		}
-		items = append(items, item)
-	}
-	if scanner.Err() != nil {
-		return scanner.Err()
-	}
-	dg.Items = items
-	return nil
-}
-
 func (dg *DraftGenerator) Execute(itemIndex int, dst io.Writer) error {
 	// if there was no cached Templater it is created and deleted at the end of the function execution
 	// used while singel Execute call
