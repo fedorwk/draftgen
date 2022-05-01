@@ -16,7 +16,7 @@ var (
 	StartDelim string
 	EndDelim   string
 
-	CSVDelim rune
+	CSVDelim string
 )
 
 func Run() {
@@ -33,7 +33,7 @@ func resolveFlags() {
 	StartDelim = *flag.String("a", "{", "placeholder start")
 	EndDelim = *flag.String("b", "}", "placeholder end")
 
-	CSVDelim = []rune(*flag.String("c", ",", "csv delimiter"))[0]
+	CSVDelim = *flag.String("c", "", "csv delimiter")
 
 	flag.Parse()
 
