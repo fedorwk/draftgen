@@ -1,26 +1,27 @@
 package cli
 
 import (
-	"os"
 	"testing"
 )
 
 func TestRunFiles(t *testing.T) {
-	os.Args = append(os.Args,
+	cliArgs := []string{
 		"-t", "testdata/testTemplate",
-		"-d", "testdata/testCSV")
-	err := Run()
+		"-d", "testdata/testCSV",
+	}
+	err := Run(cliArgs)
 	if err != nil {
 		t.Error(err)
 	}
 }
 
 func TestRunZip(t *testing.T) {
-	os.Args = append(os.Args,
+	cliArgs := []string{
 		"-t", "testdata/testTemplate",
 		"-d", "testdata/testCSV",
-		"-z")
-	err := Run()
+		"-z",
+	}
+	err := Run(cliArgs)
 	if err != nil {
 		t.Error(err)
 	}

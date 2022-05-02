@@ -31,9 +31,9 @@ var (
 	CSVDelim string
 )
 
-func Run() error {
+func Run(args []string) error {
 	// DATA READING AND VALIDATION
-	parseCliArgs()
+	parseCliArgs(args)
 	templateFile, err := os.Open(TemplatePath)
 	if err != nil {
 		return err
@@ -91,39 +91,41 @@ func Run() error {
 	return nil
 }
 
-func parseCliArgs() {
-	flag.StringVar(&TemplatePath, "template", "", "template path")
-	flag.StringVar(&TemplatePath, "t", "", "template path")
-	flag.StringVar(&DataPath, "d", "", "data path")
-	flag.StringVar(&DataPath, "data", "", "data path")
-	flag.StringVar(&OutputDirPath, "output", appConfig.OutputDir, "generated drafts output dir path")
-	flag.StringVar(&OutputDirPath, "o", appConfig.OutputDir, "generated drafts output dir path")
-	flag.BoolVar(&ZipOutput, "zip", false, "zip output files")
-	flag.BoolVar(&ZipOutput, "z", false, "zip output files")
+func parseCliArgs(args []string) {
+	flags := flag.NewFlagSet("", flag.ExitOnError)
+	flags.StringVar(&TemplatePath, "template", "", "template path")
+	flags.StringVar(&TemplatePath, "t", "", "template path")
+	flags.StringVar(&DataPath, "d", "", "data path")
+	flags.StringVar(&DataPath, "data", "", "data path")
+	flags.StringVar(&OutputDirPath, "output", appConfig.OutputDir, "generated drafts output dir path")
+	flags.StringVar(&OutputDirPath, "o", appConfig.OutputDir, "generated drafts output dir path")
+	flags.BoolVar(&ZipOutput, "zip", false, "zip output files")
+	flags.BoolVar(&ZipOutput, "z", false, "zip output files")
 
-	flag.StringVar(&EmailPlaceholder, "email", "", "email placeholder")
-	flag.StringVar(&EmailPlaceholder, "e", "", "email placeholder")
-	flag.StringVar(&Subject, "subject", "", "email subject")
-	flag.StringVar(&Subject, "s", "", "email subject")
+	flags.StringVar(&EmailPlaceholder, "email", "", "email placeholder")
+	flags.StringVar(&EmailPlaceholder, "e", "", "email placeholder")
+	flags.StringVar(&Subject, "subject", "", "email subject")
+	flags.StringVar(&Subject, "s", "", "email subject")
 
-	flag.StringVar(&StartDelim, "sdelim", appConfig.DefauluStartDelim, "placeholder start")
-	flag.StringVar(&StartDelim, "a", appConfig.DefauluStartDelim, "placeholder start")
-	flag.StringVar(&EndDelim, "edelim", appConfig.DefaultEndDelim, "placeholder end")
-	flag.StringVar(&EndDelim, "b", appConfig.DefaultEndDelim, "placeholder end")
+	flags.StringVar(&StartDelim, "sdelim", appConfig.DefauluStartDelim, "placeholder start")
+	flags.StringVar(&StartDelim, "a", appConfig.DefauluStartDelim, "placeholder start")
+	flags.StringVar(&EndDelim, "edelim", appConfig.DefaultEndDelim, "placeholder end")
+	flags.StringVar(&EndDelim, "b", appConfig.DefaultEndDelim, "placeholder end")
 
-	flag.StringVar(&CSVDelim, "delimiter", "", "csv delimiter")
-	flag.StringVar(&CSVDelim, "c", "", "csv delimiter")
+	flags.StringVar(&CSVDelim, "delimiter", "", "csv delimiter")
+	flags.StringVar(&CSVDelim, "c", "", "csv delimiter")
 
-	flag.Parse()
+	flags.Parse(args)
+
 	if TemplatePath == "" {
-		TemplatePath = flag.Arg(0)
+		TemplatePath = flags.Arg(0)
 		if TemplatePath == "" {
 			fmt.Println(ErrNoTemplateArg)
 			os.Exit(1)
 		}
 	}
 	if DataPath == "" {
-		DataPath = flag.Arg(0)
+		DataPath = flags.Arg(0)
 		if DataPath == "" {
 			fmt.Println(ErrNoDataArg)
 			os.Exit(1)
