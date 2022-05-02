@@ -1,10 +1,15 @@
 package cli
 
 import (
+	"bytes"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
+	"strconv"
+	"strings"
 
 	"github.com/fedorwk/draftgen/generator"
 	"github.com/fedorwk/draftgen/util"
@@ -12,8 +17,10 @@ import (
 )
 
 var (
-	TemplatePath string
-	DataPath     string
+	TemplatePath  string
+	DataPath      string
+	OutputDirPath string
+	ZipOutput     bool
 
 	EmailPlaceholder string
 	Subject          string
@@ -24,27 +31,39 @@ var (
 	CSVDelim string
 )
 
-func Run() {
-	resolveFlags()
+func Run() error {
+	// DATA READING AND VALIDATION
+	parseCliArgs()
 	templateFile, err := os.Open(TemplatePath)
 	if err != nil {
-		panic(err)
+		return err
 	}
+	defer templateFile.Close()
 	dataFile, err := os.Open(DataPath)
 	if err != nil {
-		panic(err)
+		return err
+	}
+	defer dataFile.Close()
+
+	// reason: file will be read twice if user did not specify delimiter
+	var dataFileReader io.ReadWriter
+
+	if CSVDelim == "" { // if delimiter not specified by user
+		var streamCopy bytes.Buffer
+		reader := io.TeeReader(dataFile, &streamCopy) // "clone" stream
+		resolveDelimiter(reader)                      // read from cloned stream
+		dataFileReader = &streamCopy
+	} else {
+		dataFileReader = dataFile
 	}
 
-	if CSVDelim == "" {
-		resolveDelimiter(dataFile)
-	}
-
-	items, err := util.ParseItems(dataFile, CSVDelim)
+	items, _, err := util.ParseItems(dataFileReader, CSVDelim)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
-	generator := generator.DraftGenerator{
+	// SETTING UP GENERATOR
+	generator := &generator.DraftGenerator{
 		Subject:          Subject,
 		Items:            items,
 		EmailPlaceholder: EmailPlaceholder,
@@ -53,30 +72,49 @@ func Run() {
 	}
 	err = generator.ParseTemplate(templateFile)
 	if err != nil {
-		panic(err)
+		return err
 	}
-	// TODO:
 
-	// generate dests files (io.Writer's)
-
-	// execute generator to dests
-
+	// WRITING OUTPUT
+	err = makeOutputDir()
+	if err != nil {
+		return err
+	}
+	if ZipOutput {
+		err = generateToZip(generator)
+	} else {
+		err = generateToFiles(generator)
+	}
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-func resolveFlags() {
-	TemplatePath = *flag.String("t", "", "template path")
-	DataPath = *flag.String("d", "", "data path")
+func parseCliArgs() {
+	flag.StringVar(&TemplatePath, "template", "", "template path")
+	flag.StringVar(&TemplatePath, "t", "", "template path")
+	flag.StringVar(&DataPath, "d", "", "data path")
+	flag.StringVar(&DataPath, "data", "", "data path")
+	flag.StringVar(&OutputDirPath, "output", appConfig.OutputDir, "generated drafts output dir path")
+	flag.StringVar(&OutputDirPath, "o", appConfig.OutputDir, "generated drafts output dir path")
+	flag.BoolVar(&ZipOutput, "zip", false, "zip output files")
+	flag.BoolVar(&ZipOutput, "z", false, "zip output files")
 
-	EmailPlaceholder = *flag.String("e", "", "email placeholder")
-	Subject = *flag.String("s", "", "email subject")
+	flag.StringVar(&EmailPlaceholder, "email", "", "email placeholder")
+	flag.StringVar(&EmailPlaceholder, "e", "", "email placeholder")
+	flag.StringVar(&Subject, "subject", "", "email subject")
+	flag.StringVar(&Subject, "s", "", "email subject")
 
-	StartDelim = *flag.String("a", "{", "placeholder start")
-	EndDelim = *flag.String("b", "}", "placeholder end")
+	flag.StringVar(&StartDelim, "sdelim", appConfig.DefauluStartDelim, "placeholder start")
+	flag.StringVar(&StartDelim, "a", appConfig.DefauluStartDelim, "placeholder start")
+	flag.StringVar(&EndDelim, "edelim", appConfig.DefaultEndDelim, "placeholder end")
+	flag.StringVar(&EndDelim, "b", appConfig.DefaultEndDelim, "placeholder end")
 
-	CSVDelim = *flag.String("c", "", "csv delimiter")
+	flag.StringVar(&CSVDelim, "delimiter", "", "csv delimiter")
+	flag.StringVar(&CSVDelim, "c", "", "csv delimiter")
 
 	flag.Parse()
-
 	if TemplatePath == "" {
 		TemplatePath = flag.Arg(0)
 		if TemplatePath == "" {
@@ -93,9 +131,10 @@ func resolveFlags() {
 	}
 }
 
+// Wrap over delimiterdetector which returns user errors
 func resolveDelimiter(src io.Reader) {
 	var err error
-	CSVDelim, err = delimiterdetector.Parse(src, 3)
+	CSVDelim, err = delimiterdetector.Parse(src, appConfig.LinesCountToAnalyzeCSV)
 
 	if err != nil {
 		switch err {
@@ -116,5 +155,66 @@ func resolveDelimiter(src io.Reader) {
 	}
 }
 
-// 	fmt.Println("Can't detect the delimiter. please specify it")
-//	fmt.Scanln(&CSVDelim)
+func generateToFiles(gen *generator.DraftGenerator) error {
+	dests, err := generateDestFiles(len(gen.Items))
+	if err != nil {
+		return err
+	}
+	for i, dst := range dests {
+		err := gen.Execute(i, dst)
+		if err != nil {
+			return err
+		}
+		err = dst.Close()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func generateDestFiles(n int) ([]*os.File, error) {
+	err := os.Mkdir(OutputDirPath, 0755)
+	if err != nil && !errors.Is(err, fs.ErrExist) {
+		return nil, err
+	}
+	dsts := make([]*os.File, 0, n)
+	for i := 0; i < n; i++ {
+		var dstfilePath strings.Builder
+		dstfilePath.WriteString(OutputDirPath)
+		dstfilePath.WriteString("/")
+		dstfilePath.WriteString(strconv.Itoa(i + 1))
+		dstfilePath.WriteString(appConfig.OutputFileSuffix)
+		dstfile, err := os.Create(dstfilePath.String())
+		if err != nil {
+			return nil, err
+		}
+		dsts = append(dsts, dstfile)
+	}
+
+	return dsts, nil
+}
+
+func generateToZip(gen *generator.DraftGenerator) error {
+	zipFile, err := os.Create(OutputDirPath + "/" + appConfig.OutputZipName)
+	if err != nil {
+		return err
+	}
+	defer zipFile.Close()
+	filenames := util.GenerateFilenames(gen.Items, func(index int, item map[string]string) string {
+		return strconv.Itoa(index+1) + appConfig.OutputFileSuffix
+	})
+	err = gen.Zip(zipFile, filenames)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func makeOutputDir() error {
+	err := os.Mkdir(OutputDirPath, 0755)
+	if err != nil && !errors.Is(err, fs.ErrExist) {
+		return err
+	}
+	return nil
+}
