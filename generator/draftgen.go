@@ -55,8 +55,14 @@ func (dg *DraftGenerator) Execute(itemIndex int, dst io.Writer) error {
 	// used while singel Execute call
 	if dg.cachedTemplater == nil {
 		dg.cachedTemplater = templater.NewTemplater(dg.Template, dg.Items, dg.StartDelim, dg.EndDelim)
-		defer func() { dg.cachedTemplater = nil }()
 	}
+	if dg.EmailPlaceholder == "" {
+		err := dg.defineEmailPlaceholder()
+		if err != nil {
+			return err
+		}
+	}
+
 	item := dg.Items[itemIndex]
 
 	eml := email.NewEmail()
@@ -80,12 +86,6 @@ func (dg *DraftGenerator) ExecuteAll(dsts ...io.Writer) error {
 	if len(dsts) != len(dg.Items) {
 		return errors.New("number of writers (dests) must be equal to number of Items in receiver")
 	}
-	if dg.EmailPlaceholder == "" {
-		err := dg.defineEmailPlaceholder()
-		if err != nil {
-			return err
-		}
-	}
 	dg.cachedTemplater = templater.NewTemplater(dg.Template, dg.Items, dg.StartDelim, dg.EndDelim)
 	defer func() { dg.cachedTemplater = nil }()
 
@@ -99,6 +99,9 @@ func (dg *DraftGenerator) ExecuteAll(dsts ...io.Writer) error {
 }
 
 func (dg *DraftGenerator) defineEmailPlaceholder() error {
+	if dg.Items == nil {
+		return ErrNoItems
+	}
 	if placeHolder := util.DefineEmailPlaceholder(dg.Items); placeHolder == "" {
 		return ErrNoEmailPlaceholder
 	} else {
