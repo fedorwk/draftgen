@@ -1,6 +1,7 @@
 package generator
 
 import (
+	"archive/zip"
 	"bufio"
 	"bytes"
 	"io"
@@ -91,6 +92,22 @@ func (dg *DraftGenerator) ExecuteAll(dsts ...io.Writer) error {
 
 	for i := range dg.Items {
 		err := dg.Execute(i, dsts[i])
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (dg *DraftGenerator) Zip(zw io.Writer, filenames []string) error {
+	zip := zip.NewWriter(zw)
+	defer zip.Close()
+	for i, one := range filenames {
+		w, err := zip.Create(one)
+		if err != nil {
+			return err
+		}
+		err = dg.Execute(i, w)
 		if err != nil {
 			return err
 		}
