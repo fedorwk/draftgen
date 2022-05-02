@@ -27,18 +27,17 @@ func GenerateFilenames(items []map[string]string, fn NameGenFn) []string {
 	return filenames
 }
 
-func ParseItems(csv io.Reader, delimiter string) ([]map[string]string, error) {
+func ParseItems(csv io.Reader, delimiter string) (items []map[string]string, headers []string, err error) {
 	scanner := bufio.NewScanner(csv)
-	var headers []string
 	if ok := scanner.Scan(); ok {
 		headers = strings.Split(scanner.Text(), delimiter)
 	}
 
-	items := make([]map[string]string, 0)
+	items = make([]map[string]string, 0)
 	for scanner.Scan() {
 		values := strings.Split(scanner.Text(), delimiter)
 		if len(values) != len(headers) {
-			return nil, errors.New("ragged csv input")
+			return nil, nil, errors.New("ragged csv input")
 		}
 		item := make(map[string]string, len(headers))
 		for i, header := range headers {
@@ -47,7 +46,7 @@ func ParseItems(csv io.Reader, delimiter string) ([]map[string]string, error) {
 		items = append(items, item)
 	}
 	if scanner.Err() != nil {
-		return nil, scanner.Err()
+		return nil, nil, scanner.Err()
 	}
-	return items, nil
+	return items, headers, nil
 }

@@ -13,7 +13,7 @@ func TestParseItems(t *testing.T) {
 apple;10
 orange;20
 expensive;3,000`
-	got, err := util.ParseItems(strings.NewReader(inputCSV), ";")
+	got, _, err := util.ParseItems(strings.NewReader(inputCSV), ";")
 	if err != nil {
 		t.Errorf("unexpected error:%s", err)
 	}
@@ -30,7 +30,7 @@ expensive;3,000`
 apple;10
 orange
 expensive;3.000`
-	_, err = util.ParseItems(strings.NewReader(raggedCSV), ";")
+	_, _, err = util.ParseItems(strings.NewReader(raggedCSV), ";")
 	if err == nil {
 		t.Error("ragged input error expected, got nil")
 	}
