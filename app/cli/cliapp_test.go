@@ -4,10 +4,10 @@ import (
 	"testing"
 )
 
-func TestRunFiles(t *testing.T) {
+func TestBasic(t *testing.T) {
 	cliArgs := []string{
-		"-t", "testdata/testTemplate",
-		"-d", "testdata/testCSV",
+		"testdata/testTemplate",
+		"testdata/testCSV",
 	}
 	err := Run(cliArgs)
 	if err != nil {

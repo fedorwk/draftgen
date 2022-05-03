@@ -125,7 +125,7 @@ func parseCliArgs(args []string) {
 		}
 	}
 	if DataPath == "" {
-		DataPath = flags.Arg(0)
+		DataPath = flags.Arg(1)
 		if DataPath == "" {
 			fmt.Println(ErrNoDataArg)
 			os.Exit(1)
