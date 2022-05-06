@@ -17,8 +17,10 @@ func DefineEmailPlaceholder(items []map[string]string) string {
 	return ""
 }
 
+// NameGenFn defines the rule that will be used to form the file names
 type NameGenFn func(index int, item map[string]string) string
 
+// GenerateFilenames generates filenames for items according to NameGenFn function
 func GenerateFilenames(items []map[string]string, fn NameGenFn) []string {
 	filenames := make([]string, len(items))
 	for index, item := range items {
