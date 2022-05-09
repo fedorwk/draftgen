@@ -1,0 +1,8 @@
+server:
+  port: 8081
+
+app:
+  output_filename: drafts.zip
+  inner_html_url: "https://github.com/fedorwk/homepage/raw/main/services/draftgen/embedded.html"
+
+http_form:
