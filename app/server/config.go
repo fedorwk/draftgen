@@ -12,10 +12,9 @@ import (
 )
 
 type Config struct {
-	Server    *ServerConfig
-	App       *AppConfig
-	HTTPForm  *HTTPFormConfig
-	Generator *GeneratorConfig
+	Server   *ServerConfig
+	App      *AppConfig
+	HTTPForm *HTTPFormConfig
 }
 
 // Defaults
@@ -29,7 +28,8 @@ var config = Config{
 		FilenameGenFunc: func(index int, item map[string]string) string {
 			return strconv.Itoa(index+1) + ".eml"
 		},
-		OutputFilename: "drafts.zip",
+		OutputFilename:         "drafts.zip",
+		LinesCountToAnalyzeCSV: 3,
 	},
 	HTTPForm: &HTTPFormConfig{
 		Template: "template",
@@ -42,9 +42,6 @@ var config = Config{
 		EndDelim:   "end_delim",
 
 		CSVDelim: "data_delim",
-	},
-	Generator: &GeneratorConfig{
-		LinesCountToAnalyzeCSV: 3,
 	},
 }
 
@@ -64,6 +61,9 @@ type AppConfig struct {
 	FilenameGenFunc util.NameGenFn
 	// the name of the archive that will be sent to the user
 	OutputFilename string
+
+	// Lines count will be parsed to detect csv delimiter, -1 for parse until EOF
+	LinesCountToAnalyzeCSV int
 }
 
 // HTTPFormConfig specifies value names in HTTP POST request
@@ -78,11 +78,6 @@ type HTTPFormConfig struct {
 	EndDelim   string
 
 	CSVDelim string
-}
-
-// GeneratorConfig contains values related to draftgen.Generator
-type GeneratorConfig struct {
-	LinesCountToAnalyzeCSV int
 }
 
 func init() {

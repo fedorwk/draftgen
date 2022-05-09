@@ -77,7 +77,7 @@ func itemsFromRequest(r *http.Request) ([]map[string]string, error) {
 	if csvDelim == "" {
 		csvDelim, err = delimiterdetector.Parse(
 			bytes.NewReader(raw.Bytes()),
-			config.Generator.LinesCountToAnalyzeCSV,
+			config.App.LinesCountToAnalyzeCSV,
 		)
 		if err != nil {
 			return nil, err
