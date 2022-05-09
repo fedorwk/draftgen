@@ -2,88 +2,72 @@ package server
 
 import (
 	"bytes"
+	"flag"
+	"io"
 	"log"
 	"net/http"
 	"os"
-	"strconv"
 
 	"github.com/fedorwk/draftgen/util"
+	"github.com/ilyakaznacheev/cleanenv"
 	"github.com/pkg/errors"
 )
 
 type Config struct {
-	Server   *ServerConfig
-	App      *AppConfig
-	HTTPForm *HTTPFormConfig
+	Server   ServerConfig   `yaml:"server"`
+	App      AppConfig      `yaml:"app"`
+	HTTPForm HTTPFormConfig `yaml:"http_form"`
 }
 
-// Defaults
-var config = Config{
-	Server: &ServerConfig{
-		Port: "8080",
-	},
-	App: &AppConfig{
-		InnerHTMLURL:   "https://github.com/fedorwk/homepage/raw/main/services/draftgen/embedded.html",
-		InnerHTMLLocal: "",
-		FilenameGenFunc: func(index int, item map[string]string) string {
-			return strconv.Itoa(index+1) + ".eml"
-		},
-		OutputFilename:         "drafts.zip",
-		LinesCountToAnalyzeCSV: 3,
-	},
-	HTTPForm: &HTTPFormConfig{
-		Template: "template",
-		Data:     "data_file",
-
-		EmailPlaceholder: "email_ph",
-		Subject:          "subject",
-
-		StartDelim: "start_delim",
-		EndDelim:   "end_delim",
-
-		CSVDelim: "data_delim",
-	},
-}
+var config Config
 
 // ServerConfig contains values for http.Server and Endpoints
 type ServerConfig struct {
-	Port string
+	Port string `yaml:"port" env:"PORT" env-default:"8080"`
 }
 type AppConfig struct {
 	// Load service front-end from remote source.
 	// Remote source has priority over local source
-	InnerHTMLURL string
+	InnerHTMLURL string `yaml:"inner_html_url" env:"INNER_HTML_URL"`
 	// Load service front-end from local file
-	InnerHTMLLocal string
+	InnerHTMLLocal string `yaml:"inner_html_local" env:"INNER_HTML_LOCAL"`
 
 	// Specifies how file names will be generated in the zip archive
 	// Look util/util_test.go ExampleGenerateFilenames for more info
 	FilenameGenFunc util.NameGenFn
 	// the name of the archive that will be sent to the user
-	OutputFilename string
+	OutputFilename string `yaml:"output_filename" env:"OUTPUT_FNAME" env-default:"drafts.zip"`
 
 	// Lines count will be parsed to detect csv delimiter, -1 for parse until EOF
-	LinesCountToAnalyzeCSV int
+	LinesCountToAnalyzeCSV int `yaml:"lines_to_analyze" env:"CSVNLINES" env-default:"3"`
 }
 
 // HTTPFormConfig specifies value names in HTTP POST request
 type HTTPFormConfig struct {
-	Template string
-	Data     string
+	Template string `yaml:"template_http" env:"HTTPTEMPLATE" env-default:"template"`
+	Data     string `yaml:"data_file_http" env:"HTTPDATAFILE" env-default:"data_file"`
 
-	EmailPlaceholder string
-	Subject          string
+	EmailPlaceholder string `yaml:"email_ph_http" env:"HTTPEMAILPH" env-default:"email_ph"`
+	Subject          string `yaml:"subject_http" env:"HTTPSUBJECT" env-default:"subject"`
 
-	StartDelim string
-	EndDelim   string
+	StartDelim string `yaml:"start_delim_http" env:"HTTPSTARTDELIM" env-default:"start_delim"`
+	EndDelim   string `yaml:"end_delim_http" env:"HTTPENDDELIM" env-default:"end_delim"`
 
-	CSVDelim string
+	CSVDelim string `yaml:"data_delim_http" env:"HTTPCSVDELIM" env-default:"data_delim"`
 }
 
-func init() {
-	// TODO: READ CONFIG or ENV
+func (c *Config) Init() error {
+	var cfgpath string
+	flagSet := flag.NewFlagSet("ServerMain", flag.ContinueOnError)
+	flagSet.StringVar(&cfgpath, "cfg", "config.yml", "path to config file")
+	flagSet.Usage = cleanenv.FUsage(flagSet.Output(), c, nil, flagSet.Usage)
 
-	// Load Inner HTML of service into memory
+	flagSet.Parse(os.Args[1:])
+	err := cleanenv.ReadConfig(cfgpath, &config)
+	if err != nil && err != io.EOF {
+		return err
+	}
+
 	if config.App.InnerHTMLURL != "" {
 		InnerHTML = bytesFromRemote(config.App.InnerHTMLURL)
 	} else if config.App.InnerHTMLLocal != "" {
@@ -91,6 +75,7 @@ func init() {
 	} else {
 		log.Println("no source for service HTML given")
 	}
+	return nil
 }
 
 func bytesFromRemote(url string) []byte {
