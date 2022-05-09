@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-var EmbeddedHTML []byte
+var InnerHTML []byte
 
 func Run() error {
 	server := setupServer()

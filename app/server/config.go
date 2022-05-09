@@ -23,8 +23,8 @@ var config = Config{
 		Port: "8080",
 	},
 	App: &AppConfig{
-		EmbeddedHTMLURL:   "https://github.com/fedorwk/homepage/raw/main/services/draftgen/embedded.html",
-		EmbeddedHTMLLocal: "",
+		InnerHTMLURL:   "https://github.com/fedorwk/homepage/raw/main/services/draftgen/embedded.html",
+		InnerHTMLLocal: "",
 		FilenameGenFunc: func(index int, item map[string]string) string {
 			return strconv.Itoa(index+1) + ".eml"
 		},
@@ -52,9 +52,9 @@ type ServerConfig struct {
 type AppConfig struct {
 	// Load service front-end from remote source.
 	// Remote source has priority over local source
-	EmbeddedHTMLURL string
+	InnerHTMLURL string
 	// Load service front-end from local file
-	EmbeddedHTMLLocal string
+	InnerHTMLLocal string
 
 	// Specifies how file names will be generated in the zip archive
 	// Look util/util_test.go ExampleGenerateFilenames for more info
@@ -84,10 +84,10 @@ func init() {
 	// TODO: READ CONFIG or ENV
 
 	// Load Inner HTML of service into memory
-	if config.App.EmbeddedHTMLURL != "" {
-		EmbeddedHTML = bytesFromRemote(config.App.EmbeddedHTMLURL)
-	} else if config.App.EmbeddedHTMLLocal != "" {
-		EmbeddedHTML = bytesFromLocal(config.App.EmbeddedHTMLLocal)
+	if config.App.InnerHTMLURL != "" {
+		InnerHTML = bytesFromRemote(config.App.InnerHTMLURL)
+	} else if config.App.InnerHTMLLocal != "" {
+		InnerHTML = bytesFromLocal(config.App.InnerHTMLLocal)
 	} else {
 		log.Println("no source for service HTML given")
 	}
@@ -100,7 +100,7 @@ func bytesFromRemote(url string) []byte {
 	if err != nil {
 		log.Fatalln(errors.Wrapf(err,
 			"initializing server: can't get service HTML from remote source: %s",
-			config.App.EmbeddedHTMLURL))
+			config.App.InnerHTMLURL))
 	}
 	defer response.Body.Close()
 	_, err = res.ReadFrom(response.Body)
@@ -113,11 +113,11 @@ func bytesFromRemote(url string) []byte {
 func bytesFromLocal(path string) []byte {
 	var res bytes.Buffer
 
-	file, err := os.Open(config.App.EmbeddedHTMLLocal)
+	file, err := os.Open(config.App.InnerHTMLLocal)
 	if err != nil {
 		log.Fatalln(errors.Wrapf(err,
 			"initializing server: can't get service HTML from local source: %s",
-			config.App.EmbeddedHTMLLocal))
+			config.App.InnerHTMLLocal))
 	}
 	defer file.Close()
 	_, err = res.ReadFrom(file)

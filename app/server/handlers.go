@@ -11,12 +11,12 @@ import (
 )
 
 func serviceHTMLHandlerFn(w http.ResponseWriter, r *http.Request) {
-	if EmbeddedHTML == nil {
+	if InnerHTML == nil {
 		log.Println(ErrNilHTML)
 		return
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Write(EmbeddedHTML)
+	w.Write(InnerHTML)
 }
 
 func generateDraftsHandlerFn(w http.ResponseWriter, r *http.Request) {
