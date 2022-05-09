@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"errors"
 	"io"
+	"strconv"
 	"strings"
 )
 
@@ -20,8 +21,15 @@ func DefineEmailPlaceholder(items []map[string]string) string {
 // NameGenFn defines the rule that will be used to form the file names
 type NameGenFn func(index int, item map[string]string) string
 
+var defaultGenFunc = func(index int, item map[string]string) string {
+	return strconv.Itoa(index + 1)
+}
+
 // GenerateFilenames generates filenames for items according to NameGenFn function
 func GenerateFilenames(items []map[string]string, fn NameGenFn) []string {
+	if fn == nil {
+		fn = defaultGenFunc
+	}
 	filenames := make([]string, len(items))
 	for index, item := range items {
 		filenames[index] = fn(index, item)
