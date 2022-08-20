@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Document</title>
+
+	<script src="wasm_exec.js"></script>
+	<script src="generate.js"></script>
+
+</head>
+<body>
+	<service id="draftgen">
+		<form name="gen_form">
+			<fieldset>
+				<legend>Fill with your data</legend>
+	
+				<label for="subject" class="draftgen input_label">Email Subject</label>
+				<input id="subject" name="subject" class="draftgen line_input" type="text">
+	
+				<label for="template" class="draftgen input_label">
+					Email Template
+				</label>
+				<textarea id="template" name="template" rows="10" 
+					placeholder="Paste your template here" ></textarea>
+				
+				<label class="draftgen input_section_header">
+					Template placeholders
+				</label>
+				<label for="start_delim" class="draftgen input_label">start delimiter</label>
+				<input id="start_delim" name="start_delim" class="draftgen short_input" type="text" value="{" maxlength="3">
+				<label for="end_delim" class="draftgen input_label">end delimiter</label>
+				<input id="end_delim" name="end_delim" class="draftgen short_input" type="text" value="}" maxlength="3">
+				<br>
+	
+				<label class="draftgen input_section_header">Data</label>
+				<input id="data_file" name="data_file" type="file" onchange="read_file(this)">
+				
+				<label for="user-delimiter" class="draftgen input_section_header">
+					CSV delimiter
+					<span class="draftgen note">
+						if the field is left empty the csv separator will be automatically detected (not recommended)
+					</span>
+				</label>
+				<input id="csv_delim" name="csv_delim" class="draftgen short_input" type="text" value="" maxlength="3">
+	
+				<input type="button" value="Generate" onclick="generate()">
+			</fieldset>
+		</form>
+		<input type="button" value="populate with test data" onclick="populate_with_test_data()">
+		<style>
+			#draftgen{
+				font-family: sans-serif;
+			}
+			textarea#template{
+				width:100%;
+			}
+			.draftgen.input_section_header{
+				display: block;
+				padding-top: 0.4em;
+				
+				font-size: medium;
+			}
+			.draftgen.input_label{			
+				font-size: small;
+			}
+			.draftgen.short_input{
+				max-width: 3em;
+				
+				font-family: monospace;
+			}
+			.draftgen.line_input{
+				width: 100%;
+			}
+			span.draftgen.note{
+				display: block;
+	
+				font-size: small;
+				color: gray;
+			}
+		</style>
+	</service>
+	<script>
+		// This is a polyfill for FireFox and Safari
+		if (!WebAssembly.instantiateStreaming) { 
+			WebAssembly.instantiateStreaming = async (resp, importObject) => {
+				const source = await (await resp).arrayBuffer()
+				return await WebAssembly.instantiate(source, importObject)
+			}
+		}
+
+		// Promise to load the wasm file
+	   function loadWasm(path) {
+		 const go = new Go()
+
+		 return new Promise((resolve, reject) => {
+		   WebAssembly.instantiateStreaming(fetch(path), go.importObject)
+		   .then(result => {
+			 go.run(result.instance)
+			 resolve(result.instance)
+		   })
+		   .catch(error => {
+			 reject(error)
+		   })
+		 })
+	   }
+
+	 // Load the wasm file
+	 loadWasm("main.wasm").then(wasm => {
+		 console.log("main.wasm is loaded 👋")
+	 }).catch(error => {
+		 console.log("ouch", error)
+	 }) 
+	</script>
+</body>
+</html>
