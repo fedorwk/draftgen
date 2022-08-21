@@ -1,21 +1,26 @@
 var DataFile;
 
 function read_file(input) {
+	// block generate button until file fully read
+	let generateButton = document.getElementById("generate_button")
+	generateButton.disabled = true;
+	
 	let file = input.files[0];
 	let reader = new FileReader();
 	reader.readAsArrayBuffer(file);
 
   	reader.onload = function() {
 		DataFile = new Uint8Array(reader.result) // necessary typecasting for go's syscall/js
+		generateButton.disabled = false;
   	};
 
   	reader.onerror = function() {
-    	console.log(reader.error);
+    	alert(`uploading file error: ${reader.error}`)
   	};
 }
 
 // TODO: wait until read_file() complete
-async function generate() {
+function generate() {
 	let formData = {};
 	
 	formData.subject = document.getElementById('subject').value;
