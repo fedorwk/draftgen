@@ -14,26 +14,47 @@ import (
 	"github.com/fedorwk/draftgen/util"
 )
 
+func main() {
+	js.Global().Set("generate_go", js.FuncOf(Generate))
+	js.Global().Set("retrieveResult_go", js.FuncOf(WriteBufferToJSUint8Array))
+
+	<-make(chan bool)
+}
+
+var (
+	OutputDataBuffer *bytes.Buffer
+)
+
 func Generate(this js.Value, args []js.Value) interface{} {
-	fmt.Println("DEBUG: generate_go() passed arguments", args)
-	if len(args) != 2 {
-		panic(ErrRaggedInput)
+	if len(args) != 1 {
+		fmt.Println(ErrRaggedInput)
+		return -1
 	}
-	formData, dstJsObject := args[0], args[1]
+	formData := args[0]
 	generator, err := parseInput(formData)
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
+		return -1
 	}
 
 	filenames := util.GenerateFilenames(generator.Items, config.FilenameGenFunc)
-	var zipData bytes.Buffer
-	err = generator.Zip(&zipData, filenames)
+	OutputDataBuffer = &bytes.Buffer{}
+	err = generator.Zip(OutputDataBuffer, filenames)
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
+		return -1
 	}
+	return OutputDataBuffer.Len()
+}
 
-	js.CopyBytesToJS(dstJsObject, zipData.Bytes())
-	return dstJsObject
+func WriteBufferToJSUint8Array(this js.Value, args []js.Value) interface{} {
+	if len(args) != 1 {
+		fmt.Println("error: no dest passed")
+		return -1
+	}
+	dst := args[0]
+	nBytes := js.CopyBytesToJS(dst, OutputDataBuffer.Bytes())
+	return nBytes
 }
 
 func parseInput(input js.Value) (*generator.DraftGenerator, error) {
@@ -48,20 +69,15 @@ func parseInput(input js.Value) (*generator.DraftGenerator, error) {
 
 	// TODO: Can't get len of data
 	jsInputData := input.Get("data")
-	fmt.Println("DEBUG: ", jsInputData)
-	fmt.Println("DEBUG: ", jsInputData.Type().String())
 	dataLen := jsInputData.Length()
 
-	fmt.Println("DEBUG: jsInputData Len:", dataLen)
 	inputData := make([]byte, dataLen)
-	DEBUG_READ_BYTES := js.CopyBytesToGo(inputData, input.Get("data"))
-	fmt.Println("DEBUG: bytes of file copied:", DEBUG_READ_BYTES)
+	js.CopyBytesToGo(inputData, input.Get("data"))
 	inputDataReader := bytes.NewReader(inputData)
 	items, _, err := util.ParseItems(inputDataReader, csvDelim)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("DEBUG: Items:", items)
 
 	emailPlaceholder := util.DefineEmailPlaceholder(items)
 
@@ -74,12 +90,6 @@ func parseInput(input js.Value) (*generator.DraftGenerator, error) {
 		EndDelim:         endDelim,
 	}
 	return generator, nil
-}
-
-func main() {
-	js.Global().Set("generate_go", js.FuncOf(Generate))
-
-	<-make(chan bool)
 }
 
 type Config struct {

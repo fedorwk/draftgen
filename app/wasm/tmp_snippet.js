@@ -13,7 +13,7 @@ function download(filename, text) {
 
 
 // Document Download
-// Допустим, у тебя метод generateSomeShit вызывает васм говнище и вовзращает результат в виде массива, тогда:
+// Допустим, у тебя метод generateSomeShit вызывает васм и вовзращает результат в виде массива, тогда:
 const shit = await generateSomeShit();
 const blob = new Blob([shit]);
 const url = URL.createObjectURL(blob);
