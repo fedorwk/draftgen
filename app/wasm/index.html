@@ -33,7 +33,7 @@
 				<label for="end_delim" class="draftgen input_label">end delimiter</label>
 				<input id="end_delim" name="end_delim" class="draftgen short_input" type="text" value="}" maxlength="3">
 				<br>
-	
+				
 				<label class="draftgen input_section_header">Data</label>
 				<input id="data_file" name="data_file" type="file" onchange="read_file(this)">
 				
@@ -48,7 +48,7 @@
 				<input id="generate_button" type="button" value="Generate" onclick="generate()">
 			</fieldset>
 		</form>
-		<input type="button" value="populate with test data" onclick="populateWithTestData()">
+		<input type="button" id="load_test_button" value="populate with test data" onclick="populateWithTestData()">
 		<style>
 			#draftgen{
 				font-family: sans-serif;

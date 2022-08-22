@@ -1,5 +1,10 @@
 var DataFile;
 
+var TestData = `name;purchase;store;email
+A;apples;X;x@m.com
+B;oranges;Y;y@m.com
+C;juice;Z;z@m.com`
+
 function read_file(input) {
 	// block generate button until file fully read
 	let generateButton = document.getElementById("generate_button")
@@ -69,7 +74,8 @@ You can buy {purchase} at {store} today`
 	document.getElementById('start_delim').value = '{'
 	document.getElementById('end_delim').value = '}'
 	document.getElementById('csv_delim').value = ';'
-	// TODO: implement
-	// document.getElementById('data_file').setAttribute('value', '')
-	alert("functionality incomplete, select testfile yourself")
+
+	testBuffer = new TextEncoder().encode(TestData);
+	DataFile = new Uint8Array(testBuffer)
+	alert('test data loaded')
 }
