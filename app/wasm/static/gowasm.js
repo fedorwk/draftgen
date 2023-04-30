@@ -1,10 +1,15 @@
-// Copyright 2018 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// This project includes code from the Golang project, 
+// which is governed by a BSD-style license. 
+// Copyright (c) 2018 The Go Authors. All rights reserved.  
 
 "use strict";
 
-(() => {
+export default (wasmFile) => {
+    setupRuntime();
+    loadWASM(wasmFile);
+}
+
+export function setupRuntime() {
 	const enosys = () => {
 		const err = new Error("not implemented");
 		err.code = "ENOSYS";
@@ -551,4 +556,38 @@
 			};
 		}
 	}
-})();
+};
+
+export function loadWASM(wasmFile) {
+    {
+        if (!WebAssembly.instantiateStreaming) { 
+            WebAssembly.instantiateStreaming = async (resp, importObject) => {
+                const source = await (await resp).arrayBuffer()
+                return await WebAssembly.instantiate(source, importObject)
+            }
+        }
+
+        // Promise to load the wasm file
+        function loadWasm(path) {
+            const go = new Go()
+
+            return new Promise((resolve, reject) => {
+            WebAssembly.instantiateStreaming(fetch(path), go.importObject)
+            .then(result => {
+                go.run(result.instance)
+                resolve(result.instance)
+            })
+            .catch(error => {
+                reject(error)
+            })
+            })
+        }
+
+        // Load the wasm file
+        loadWasm(wasmFile).then(wasm => {
+            console.log("wasm is loaded")
+        }).catch(error => {
+            console.log("failed to load wasm", error)
+        })
+    }
+}
